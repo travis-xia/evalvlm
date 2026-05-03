@@ -342,7 +342,12 @@ class TransVideoBench(VideoBaseDataset):
 
         message = []
         if video_llm:
-            message.append(dict(type='video', value=osp.join(self.data_root, line['video'] + '.mp4')))
+            video_msg = dict(type='video', value=osp.join(self.data_root, line['video'] + '.mp4'))
+            if self.nframe > 0:
+                video_msg['nframes'] = int(self.nframe)
+            if self.fps > 0:
+                video_msg['fps'] = float(self.fps)
+            message.append(video_msg)
         else:
             frames = self.save_video_frames(line['video'])
             for frame in frames:

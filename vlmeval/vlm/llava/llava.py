@@ -609,10 +609,19 @@ class LLaVA_OneVision(BaseModel):
 
     def generate_inner_video(self, message, dataset=None):
         content, text_content, visual_content, videos = "", "", "", []
+        temporal_fps = None
+        max_frames_num = self.nframe
 
         for msg in message:
             if msg["type"] == "text":
                 text_content += msg["value"]
+            elif msg["type"] == "video":
+                videos.append(msg["value"])
+                visual_content += self.DEFAULT_IMAGE_TOKEN + "\n"
+                if msg.get("fps") is not None and float(msg["fps"]) > 0:
+                    temporal_fps = float(msg["fps"])
+                if msg.get("nframes") is not None:
+                    max_frames_num = int(msg["nframes"])
             else:
                 videos.append(msg["value"])
                 visual_content += self.DEFAULT_IMAGE_TOKEN + "\n"
@@ -623,12 +632,23 @@ class LLaVA_OneVision(BaseModel):
             )
 
         video_frames, frame_time, video_time = self.load_video(
-            videos[0], self.nframe, 1, self.force_sample
+            videos[0], max_frames_num, 1, self.force_sample, temporal_fps=temporal_fps
         )
+
+        n_vid_frames = len(video_frames)
+        if temporal_fps is not None and temporal_fps > 0:
+            sampling_desc = (
+                f'at approximately {temporal_fps} frame(s) per second of video time '
+                f'(using at most {max_frames_num} frames)'
+            )
+        elif self.force_sample:
+            sampling_desc = 'with approximately uniform coverage over the full video'
+        else:
+            sampling_desc = 'from the video'
 
         time_instruciton = (
             f"The video lasts for {video_time:.2f} seconds,"
-            f"and {len(video_frames[0])} frames are uniformly sampled from it."
+            f"and {n_vid_frames} frames are sampled {sampling_desc}."
             f"These frames are located at {frame_time}."
             f"Please answer the following questions related to this video.\n"
         )
@@ -657,8 +677,14 @@ class LLaVA_OneVision(BaseModel):
             prompt_question, self.tokenizer, self.IMAGE_TOKEN_INDEX, return_tensors="pt"
         )
         input_ids = input_ids.unsqueeze(0).cuda()
-        image_sizes = [frame.size for frame in video_frames]
-        modalities = ["video"] * len(video_frames)
+        if isinstance(video_frames, np.ndarray):
+            image_sizes = [
+                (int(video_frames[i].shape[1]), int(video_frames[i].shape[0]))
+                for i in range(video_frames.shape[0])
+            ]
+        else:
+            image_sizes = [frame.size for frame in video_frames]
+        modalities = ["video"] * n_vid_frames
 
         stop_str = conv.sep if conv.sep_style != self.SeparatorStyle.TWO else conv.sep2
         keywords = [stop_str]
@@ -680,15 +706,36 @@ class LLaVA_OneVision(BaseModel):
         text_outputs = self.tokenizer.batch_decode(cont, skip_special_tokens=True)[0]
         return text_outputs
 
-    def load_video(self, video_path, max_frames_num, fps=1, force_sample=False):
+    def load_video(self, video_path, max_frames_num, fps=1, force_sample=False, temporal_fps=None):
         from decord import VideoReader, cpu
 
         if max_frames_num == 0:
             return np.zeros((1, 336, 336, 3))
         vr = VideoReader(video_path, ctx=cpu(0), num_threads=1)
         total_frame_num = len(vr)
-        video_time = total_frame_num / vr.get_avg_fps()
-        fps = round(vr.get_avg_fps() / fps)
+        avg_fps = vr.get_avg_fps()
+        video_time = total_frame_num / avg_fps
+
+        # Dataset-driven temporal sampling (e.g. TransVideoBench_1fps). Matches VideoBaseDataset.save_video_frames:
+        # step_size = video_fps / target_fps; one frame every 1/target_fps seconds.
+        # When force_sample=True, legacy path would ignore `fps` and only linspace — bypass that here.
+        if temporal_fps is not None and temporal_fps > 0:
+            total_duration = total_frame_num / avg_fps
+            required_frames = max(1, int(total_duration * temporal_fps))
+            step_size = avg_fps / temporal_fps
+            indices = [
+                min(int(i * step_size), total_frame_num - 1)
+                for i in range(required_frames)
+            ]
+            indices = list(dict.fromkeys(indices))
+            if len(indices) > max_frames_num:
+                pick = np.linspace(0, len(indices) - 1, max_frames_num, dtype=float)
+                indices = [indices[int(round(float(p)))] for p in pick]
+            frame_time = ",".join([f"{idx / avg_fps:.2f}s" for idx in indices])
+            spare_frames = vr.get_batch(indices).asnumpy()
+            return spare_frames, frame_time, video_time
+
+        fps = max(1, round(avg_fps / fps))
         frame_idx = [i for i in range(0, len(vr), fps)]
         frame_time = [i / fps for i in frame_idx]
         if len(frame_idx) > max_frames_num or force_sample:
@@ -697,10 +744,9 @@ class LLaVA_OneVision(BaseModel):
                 0, total_frame_num - 1, sample_fps, dtype=int
             )
             frame_idx = uniform_sampled_frames.tolist()
-            frame_time = [i / vr.get_avg_fps() for i in frame_idx]
+            frame_time = [i / avg_fps for i in frame_idx]
         frame_time = ",".join([f"{i:.2f}s" for i in frame_time])
         spare_frames = vr.get_batch(frame_idx).asnumpy()
-        # import pdb;pdb.set_trace()
         return spare_frames, frame_time, video_time
 
     def generate_inner(self, message, dataset=None):
