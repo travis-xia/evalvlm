@@ -1,9 +1,18 @@
 import copy as cp
+import functools
 import os
-from functools import partial
 
 import vlmeval.api as api
 import vlmeval.vlm as vlm
+
+_functools_partial = functools.partial
+
+
+def partial(func, *args, **kwargs):
+    """Like functools.partial; returns None if func is None (optional API missing on disk)."""
+    if func is None:
+        return None
+    return _functools_partial(func, *args, **kwargs)
 
 PandaGPT_ROOT = None
 MiniGPT4_ROOT = None
@@ -2587,4 +2596,4 @@ model_groups = [
 model_groups.extend([bagel_series, spatial_related_models, sensenova_si_series])
 
 for grp in model_groups:
-    supported_VLM.update(grp)
+    supported_VLM.update({k: v for k, v in grp.items() if v is not None})

@@ -17,8 +17,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -158,8 +158,8 @@ dmypy.json
 # Cython debug symbols
 cython_debug/
 
-# Images
-images/
+# Root-level image dumps only (unanchored images/ can hide package dirs)
+/images/
 
 scripts/*ttf
 .history
@@ -167,56 +167,41 @@ cache_dir/*
 
 # Ignore data and ckpts
 *.pth
-data
+# Dataset dir at repo root only (unanchored "data" ignores any path named data)
+/data
 
-# Evaluation Outputs
-outputs/*
+# Evaluation outputs
+outputs/
 demo.ipynb
 !vlmeval/dataset/utils/vgrpbench/configs/formating-prompt/**/*.json
 .vscode
 *.swp
-GPT4o_MINI/
 
-2weiyun*
-script.py
-Gemini*
-Claude3-5V*
-GLM4V*
-GPT4o*
-GPT4V*
-mmmu_debug
-bailingMM
-BailingMM*
-SenseChat*
-Step*
-DoubaoVL
-arch
-BlueLM*
-mmb_*
-gpt-4.1*
-Reka*
-Taiyi
-TeleMM
-apple.jpg
+# -----------------------------------------------------------------------------
+# Do NOT use broad patterns like BlueLM*, Qwen*, result*, run.sh, mmb_* here:
+# on case-insensitive filesystems they match real package files (bluelm_api.py,
+# result_transfer.py, scripts/run.sh, mmb_eval_gradio.py, internvl/, etc.) so
+# they never get committed. Use repo-root anchors (/name) or paths under outputs/.
+# Per-machine junk → .git/info/exclude or a global gitignore.
+# -----------------------------------------------------------------------------
+
+/GPT4o_MINI/
+/mmmu_debug
+/run.sh
+/run_g.sh
+/script.py
+/arch
+/apple.jpg
+/api_list.txt
+/tmp/
+/temp
+/debug
+/bailingMM
+/2weiyun*
+
 assets/LOGO.png
-api_list.txt
 vlmeval/gemini_tmp.py
-run.sh
-run_g.sh
-tmp/
-InternVL*
-Qwen*
-CongRong*
-Seed1.5*
-aguvis*
-grok-*
-GLM4.5*
-SenseNova*
 
 .DS_Store
 
-temp
-result*
-debug
-outputs
 scripts/data

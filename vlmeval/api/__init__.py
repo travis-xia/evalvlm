@@ -1,36 +1,59 @@
-from .arm_thinker import ARM_thinker
-from .bailingmm import bailingMMAPI
-from .bedrock import BedrockAPI
-from .bluelm_api import BlueLM_API, BlueLMWrapper
-from .claude import Claude3V, Claude_Wrapper
-from .cloudwalk import CWWrapper
-from .doubao_vl_api import DoubaoVL
-from .gcp_vertex import GCPVertexAPI
-from .gemini import Gemini, GeminiWrapper
-from .glm_vision import GLMVisionAPI
-from .gpt import GPT4V, OpenAIWrapper
-from .hf_chat_model import HFChatModel
-from .hunyuan import HunyuanVision
-from .jt_vl_chat import JTVLChatAPI
-from .jt_vl_chat_mini import JTVLChatAPI_2B, JTVLChatAPI_Mini
-from .kimivl_api import KimiVLAPI, KimiVLAPIWrapper
-from .lmdeploy import LMDeployAPI, LMDeployWrapper
-from .minimax_api import MiniMaxAPI
-from .mug_u import MUGUAPI
-from .openai_sdk import OpenAISDKWrapper
-from .qwen_api import QwenAPI
-from .qwen_vl_api import Qwen2VLAPI, QwenVLAPI, QwenVLWrapper
-from .rbdashmm_chat3_5_api import RBdashMMChat3_5_38B_API, RBdashMMChat3_78B_API
-from .rbdashmm_chat3_api import RBdashChat3_5_API, RBdashMMChat3_API
-from .reka import Reka
-from .sensechat_vision import SenseChatVisionAPI, SenseChatVisionV2API
-from .siliconflow import SiliconFlowAPI, TeleMMAPI
-from .taichu import TaichuVLAPI, TaichuVLRAPI
-from .taiyi import TaiyiAPI
-from .telemm import TeleMM2_API
-from .telemm_thinking import TeleMM2Thinking_API
-from .together import TogetherAPI
-from .video_chat_online_v2 import VideoChatOnlineV2API
+"""Aggregated API wrappers. Submodules may be absent on minimal installs; missing ones become None."""
+import importlib
+
+# (submodule stem under this package, attribute names to re-export)
+_SUBMODULE_EXPORTS = (
+    ('arm_thinker', ('ARM_thinker',)),
+    ('bailingmm', ('bailingMMAPI',)),
+    ('bedrock', ('BedrockAPI',)),
+    ('bluelm_api', ('BlueLM_API', 'BlueLMWrapper')),
+    ('claude', ('Claude3V', 'Claude_Wrapper')),
+    ('cloudwalk', ('CWWrapper',)),
+    ('doubao_vl_api', ('DoubaoVL',)),
+    ('gcp_vertex', ('GCPVertexAPI',)),
+    ('gemini', ('Gemini', 'GeminiWrapper')),
+    ('glm_vision', ('GLMVisionAPI',)),
+    ('gpt', ('GPT4V', 'OpenAIWrapper')),
+    ('hf_chat_model', ('HFChatModel',)),
+    ('hunyuan', ('HunyuanVision',)),
+    ('jt_vl_chat', ('JTVLChatAPI',)),
+    ('jt_vl_chat_mini', ('JTVLChatAPI_2B', 'JTVLChatAPI_Mini')),
+    ('kimivl_api', ('KimiVLAPI', 'KimiVLAPIWrapper')),
+    ('lmdeploy', ('LMDeployAPI', 'LMDeployWrapper')),
+    ('minimax_api', ('MiniMaxAPI',)),
+    ('mug_u', ('MUGUAPI',)),
+    ('openai_sdk', ('OpenAISDKWrapper',)),
+    ('qwen_api', ('QwenAPI',)),
+    ('qwen_vl_api', ('Qwen2VLAPI', 'QwenVLAPI', 'QwenVLWrapper')),
+    ('rbdashmm_chat3_5_api', ('RBdashMMChat3_5_38B_API', 'RBdashMMChat3_78B_API')),
+    ('rbdashmm_chat3_api', ('RBdashChat3_5_API', 'RBdashMMChat3_API')),
+    ('reka', ('Reka',)),
+    ('sensechat_vision', ('SenseChatVisionAPI', 'SenseChatVisionV2API')),
+    ('siliconflow', ('SiliconFlowAPI', 'TeleMMAPI')),
+    ('taichu', ('TaichuVLAPI', 'TaichuVLRAPI')),
+    ('taiyi', ('TaiyiAPI',)),
+    ('telemm', ('TeleMM2_API',)),
+    ('telemm_thinking', ('TeleMM2Thinking_API',)),
+    ('together', ('TogetherAPI',)),
+    ('video_chat_online_v2', ('VideoChatOnlineV2API',)),
+)
+
+
+def _load_submodules():
+    pkg = __name__
+    for submod, names in _SUBMODULE_EXPORTS:
+        try:
+            mod = importlib.import_module(f'.{submod}', pkg)
+        except ImportError:
+            for n in names:
+                globals()[n] = None
+            continue
+        for n in names:
+            globals()[n] = getattr(mod, n, None)
+
+
+_load_submodules()
+del _load_submodules, _SUBMODULE_EXPORTS
 
 __all__ = [
     'OpenAIWrapper', 'HFChatModel', 'GeminiWrapper', 'GPT4V', 'Gemini', 'QwenVLWrapper',
@@ -38,7 +61,7 @@ __all__ = [
     'SenseChatVisionAPI', 'HunyuanVision', 'Qwen2VLAPI', 'BlueLMWrapper', 'BlueLM_API',
     'JTVLChatAPI', 'JTVLChatAPI_Mini', 'JTVLChatAPI_2B', 'bailingMMAPI', 'TaiyiAPI', 'TeleMMAPI',
     'SiliconFlowAPI', 'LMDeployAPI', 'ARM_thinker', 'OpenAISDKWrapper', 'LMDeployWrapper',
-    'TaichuVLAPI', 'TaichuVLRAPI', 'DoubaoVL', "MUGUAPI", 'KimiVLAPIWrapper', 'KimiVLAPI',
+    'TaichuVLAPI', 'TaichuVLRAPI', 'DoubaoVL', 'MUGUAPI', 'KimiVLAPIWrapper', 'KimiVLAPI',
     'RBdashMMChat3_API', 'RBdashChat3_5_API', 'RBdashMMChat3_78B_API', 'RBdashMMChat3_5_38B_API',
     'VideoChatOnlineV2API', 'TeleMM2_API', 'TeleMM2Thinking_API', 'TogetherAPI', 'GCPVertexAPI',
     'BedrockAPI', 'SenseChatVisionV2API', 'MiniMaxAPI',
