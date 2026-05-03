@@ -165,7 +165,27 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
                     print(f'{model_name} is a video-llm model, nframe is set to {dataset.nframe}, not using default')
                     setattr(model, 'nframe', dataset.nframe)
             elif getattr(model, 'fps', 0) == 0:
-                raise ValueError(f'fps is not suitable for {model_name}')
+                # LLaVA_OneVision / LLaVA-Video: fixed nframe + dataset fps only in prompt message
+                # (no model.fps — unlike Qwen2-VL). Dataset nframe==0 + fps>0 is valid.
+                _llava_video_infer = (
+                    getattr(model, 'nframe', 0) > 0
+                    and getattr(model, 'VIDEO_LLM', False)
+                    and (
+                        type(model).__name__ == 'LLaVA_OneVision'
+                        or (
+                            model_name
+                            and 'llava' in model_name.lower()
+                            and 'video' in model_name.lower()
+                        )
+                    )
+                )
+                if _llava_video_infer:
+                    print(
+                        f'{model_name}: dataset uses fps-style metadata (nframe=0, fps={getattr(dataset, "fps", None)}); '
+                        f'keeping model nframe={getattr(model, "nframe")} (no model.fps; fps may be in video message).'
+                    )
+                else:
+                    raise ValueError(f'fps is not suitable for {model_name}')
             else:
                 setattr(model, 'nframe', None)
         if getattr(model, 'fps', None) is not None and getattr(model, 'fps', 0) > 0:
