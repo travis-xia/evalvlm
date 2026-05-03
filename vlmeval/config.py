@@ -1028,6 +1028,13 @@ llava_series = {
     "llava_video_qwen2_7b": partial(
         vlm.LLaVA_OneVision, model_path="lmms-lab/LLaVA-Video-7B-Qwen2"
     ),
+    "llava_video_qwen2_7b_inspire_auto": partial(
+        vlm.LLaVA_OneVision,
+        model_path=(
+            "/inspire/qb-ilm/project/traffic-congestion-management/"
+            "xiacheng-240108120111/LLaVA-NeXT-79ef45/auto_LLaVA-Video-7B-Qwen2"
+        ),
+    ),
     "llava_video_qwen2_72b": partial(
         vlm.LLaVA_OneVision, model_path="lmms-lab/LLaVA-Video-72B-Qwen2"
     ),
