@@ -156,13 +156,26 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
         )
         setattr(model, 'VIDEO_LLM', False)
 
-    for i, idx in tqdm(enumerate(sample_indices_subrem)):
+    _pbar_desc = model_name if model_name else 'infer'
+    if len(_pbar_desc) > 56:
+        _pbar_desc = _pbar_desc[:53] + '...'
+    _llava_fps_notice_done = False
+    pbar = tqdm(
+        enumerate(sample_indices_subrem),
+        total=len(sample_indices_subrem),
+        desc=_pbar_desc,
+        unit='sample',
+        dynamic_ncols=True,
+    )
+    for i, idx in pbar:
         if idx in res:
             continue
         if getattr(model, 'nframe', None) is not None and getattr(model, 'nframe', 0) > 0:
             if dataset.nframe > 0:
                 if getattr(model, 'nframe', 0) != dataset.nframe:
-                    print(f'{model_name} is a video-llm model, nframe is set to {dataset.nframe}, not using default')
+                    tqdm.write(
+                        f'{model_name} is a video-llm model, nframe is set to {dataset.nframe}, not using default'
+                    )
                     setattr(model, 'nframe', dataset.nframe)
             elif getattr(model, 'fps', 0) == 0:
                 # LLaVA_OneVision / LLaVA-Video: fixed nframe + dataset fps only in prompt message
@@ -180,10 +193,14 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
                     )
                 )
                 if _llava_video_infer:
-                    print(
-                        f'{model_name}: dataset uses fps-style metadata (nframe=0, fps={getattr(dataset, "fps", None)}); '
-                        f'keeping model nframe={getattr(model, "nframe")} (no model.fps; fps may be in video message).'
-                    )
+                    if not _llava_fps_notice_done:
+                        tqdm.write(
+                            f'{model_name}: dataset uses fps-style metadata (nframe=0, '
+                            f'fps={getattr(dataset, "fps", None)}); '
+                            f'keeping model nframe={getattr(model, "nframe")} '
+                            '(no model.fps; temporal fps is read from each video message if present).'
+                        )
+                        _llava_fps_notice_done = True
                 else:
                     raise ValueError(f'fps is not suitable for {model_name}')
             else:
@@ -191,7 +208,9 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
         if getattr(model, 'fps', None) is not None and getattr(model, 'fps', 0) > 0:
             if dataset.fps > 0:
                 if getattr(model, 'fps', 0) != dataset.fps:
-                    print(f'{model_name} is a video-llm model, fps is set to {dataset.fps}, not using default')
+                    tqdm.write(
+                        f'{model_name} is a video-llm model, fps is set to {dataset.fps}, not using default'
+                    )
                     setattr(model, 'fps', dataset.fps)
             elif getattr(model, 'nframe', 0) == 0:
                 raise ValueError(f'nframe is not suitable for {model_name}')
@@ -203,9 +222,9 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
             or 'Qwen2.5-Omni' in model_name
         ):
             if getattr(model, 'nframe', None) is None and dataset.nframe > 0:
-                print(f'using {model_name} default setting for video, dataset.nframe is ommitted')
+                tqdm.write(f'using {model_name} default setting for video, dataset.nframe is ommitted')
             if getattr(model, 'fps', None) is None and dataset.fps > 0:
-                print(f'using {model_name} default setting for video, dataset.fps is ommitted')
+                tqdm.write(f'using {model_name} default setting for video, dataset.fps is ommitted')
         if 'SUB_DATASET' in dataset.data.iloc[sample_map[idx]]:
             dataset_name = dataset.data.iloc[sample_map[idx]]['SUB_DATASET']
         if hasattr(model, 'use_custom_prompt') and model.use_custom_prompt(dataset_name):
@@ -235,7 +254,7 @@ def infer_data(model, model_name, work_dir, dataset, out_file, verbose=False, ap
         torch.cuda.empty_cache()
 
         if verbose:
-            print(response, flush=True)
+            tqdm.write(str(response))
 
         res[idx] = response
         if (i + 1) % 20 == 0:
