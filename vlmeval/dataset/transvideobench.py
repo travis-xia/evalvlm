@@ -56,6 +56,19 @@ def _strip_video_suffix(video):
     return video[:-4] if video.endswith('.mp4') else video
 
 
+# Official release uses hyphens (results-en.json); older layouts used underscores.
+_MCQ_ANNO_NAMES = ('results_en.json', 'results-en.json')
+_TG_ANNO_NAMES = ('results-tg_en.json', 'results-tg-en.json')
+
+
+def _first_existing_anno(data_root, names):
+    for name in names:
+        path = osp.join(data_root, name)
+        if osp.exists(path):
+            return path
+    return None
+
+
 def _duration_bucket(duration):
     try:
         duration = float(duration)
@@ -208,13 +221,12 @@ class TransVideoBench(VideoBaseDataset):
         for root in candidates:
             if not root:
                 continue
-            mcq_file = osp.join(root, 'results_en.json')
-            tg_file = osp.join(root, 'results-tg_en.json')
-            if osp.exists(mcq_file) or osp.exists(tg_file):
+            if _first_existing_anno(root, _MCQ_ANNO_NAMES) or _first_existing_anno(root, _TG_ANNO_NAMES):
                 return root
         raise FileNotFoundError(
             'Cannot find TransVideoBench annotations. Set TRANSVIDEOBENCH_ROOT or put '
-            'results_en.json / results-tg_en.json under $LMUData/TransVideoBench.'
+            'results_en.json or results-en.json, and results-tg_en.json or results-tg-en.json '
+            'under $LMUData/TransVideoBench.'
         )
 
     @classmethod
@@ -237,8 +249,8 @@ class TransVideoBench(VideoBaseDataset):
 
     @classmethod
     def _load_mcq_records(cls, data_root):
-        anno_path = osp.join(data_root, 'results_en.json')
-        if not osp.exists(anno_path):
+        anno_path = _first_existing_anno(data_root, _MCQ_ANNO_NAMES)
+        if not anno_path:
             return []
         records = []
         for item in _safe_json_load(anno_path):
@@ -262,8 +274,8 @@ class TransVideoBench(VideoBaseDataset):
 
     @classmethod
     def _load_tg_records(cls, data_root):
-        anno_path = osp.join(data_root, 'results-tg_en.json')
-        if not osp.exists(anno_path):
+        anno_path = _first_existing_anno(data_root, _TG_ANNO_NAMES)
+        if not anno_path:
             return []
         records = []
         for item in _safe_json_load(anno_path):
