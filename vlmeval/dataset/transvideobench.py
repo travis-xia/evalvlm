@@ -247,6 +247,30 @@ class TransVideoBench(VideoBaseDataset):
             'duration', 'duration_bucket'
         ]]
 
+    @staticmethod
+    def _resolve_video(data_root, item, task_type):
+        if item.get('video_path'):
+            return _strip_video_suffix(item['video_path'])
+        if item.get('video'):
+            return _strip_video_suffix(item['video'])
+
+        sample_id = item['id']
+        task_dirs = ['videos', 'videos-mcq', 'videos_mcq'] if task_type == 'mcq' else ['videos-tg', 'videos_tg', 'tg']
+        candidates = [f'{sample_id}.mp4']
+        candidates.extend(f'{folder}/{sample_id}.mp4' for folder in task_dirs)
+        candidates.extend(f'videos/{sample_id}.mp4' for _ in [0])
+
+        for rel_path in candidates:
+            if osp.exists(osp.join(data_root, rel_path)):
+                return _strip_video_suffix(rel_path)
+        return _strip_video_suffix(candidates[1])
+
+    @staticmethod
+    def _resolved_video_filepath(data_root, video):
+        """Join data_root with relative video id, or honor absolute paths from annotations."""
+        rel = video + '.mp4'
+        return rel if osp.isabs(rel) else osp.join(data_root, rel)
+
     @classmethod
     def _load_mcq_records(cls, data_root):
         anno_path = _first_existing_anno(data_root, _MCQ_ANNO_NAMES)
@@ -255,6 +279,12 @@ class TransVideoBench(VideoBaseDataset):
         records = []
         for item in _safe_json_load(anno_path):
             video = cls._resolve_video(data_root, item, 'mcq')
+            full_path = cls._resolved_video_filepath(data_root, video)
+            if not osp.isfile(full_path):
+                print(
+                    f'[TransVideoBench] Skip MCQ id={item.get("id")}: video file not found: {full_path}'
+                )
+                continue
             duration = cls._resolve_duration(data_root, video, item)
             records.append({
                 'id': item['id'],
@@ -280,6 +310,12 @@ class TransVideoBench(VideoBaseDataset):
         records = []
         for item in _safe_json_load(anno_path):
             video = cls._resolve_video(data_root, item, 'tg')
+            full_path = cls._resolved_video_filepath(data_root, video)
+            if not osp.isfile(full_path):
+                print(
+                    f'[TransVideoBench] Skip TG id={item.get("id")}: video file not found: {full_path}'
+                )
+                continue
             duration = cls._resolve_duration(data_root, video, item)
             records.append({
                 'id': item['id'],
@@ -297,26 +333,8 @@ class TransVideoBench(VideoBaseDataset):
             })
         return records
 
-    @staticmethod
-    def _resolve_video(data_root, item, task_type):
-        if item.get('video_path'):
-            return _strip_video_suffix(item['video_path'])
-        if item.get('video'):
-            return _strip_video_suffix(item['video'])
-
-        sample_id = item['id']
-        task_dirs = ['videos', 'videos-mcq', 'videos_mcq'] if task_type == 'mcq' else ['videos-tg', 'videos_tg', 'tg']
-        candidates = [f'{sample_id}.mp4']
-        candidates.extend(f'{folder}/{sample_id}.mp4' for folder in task_dirs)
-        candidates.extend(f'videos/{sample_id}.mp4' for _ in [0])
-
-        for rel_path in candidates:
-            if osp.exists(osp.join(data_root, rel_path)):
-                return _strip_video_suffix(rel_path)
-        return _strip_video_suffix(candidates[1])
-
-    @staticmethod
-    def _resolve_duration(data_root, video, item):
+    @classmethod
+    def _resolve_duration(cls, data_root, video, item):
         for key in ['duration', 'video_duration']:
             if key in item:
                 try:
@@ -324,7 +342,7 @@ class TransVideoBench(VideoBaseDataset):
                 except (TypeError, ValueError):
                     pass
 
-        duration = _video_duration(osp.join(data_root, video + '.mp4'))
+        duration = _video_duration(cls._resolved_video_filepath(data_root, video))
         if not np.isnan(duration):
             return duration
 
