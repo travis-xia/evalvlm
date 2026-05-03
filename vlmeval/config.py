@@ -1087,6 +1087,16 @@ interns1_mini = {
     ),
 }
 
+internvideo2_5_series = {
+    "InternVideo2_5_Chat_8B": partial(
+        vlm.InternVideo2_5,
+        model_path=(
+            "/inspire/qb-ilm/project/traffic-congestion-management/"
+            "xiacheng-240108120111/hf_download/InternVideo2_5_Chat_8B"
+        ),
+    ),
+}
+
 internvl = {
     "InternVL-Chat-V1-1": partial(
         vlm.InternVLChat, model_path="OpenGVLab/InternVL-Chat-V1-1", version="V1.1"
@@ -2594,6 +2604,7 @@ model_groups = [
 
 # add by EASI team
 model_groups.extend([bagel_series, spatial_related_models, sensenova_si_series])
+model_groups.append(internvideo2_5_series)
 
 for grp in model_groups:
     supported_VLM.update({k: v for k, v in grp.items() if v is not None})

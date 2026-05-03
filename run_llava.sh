@@ -1,6 +1,6 @@
 export TRANSVIDEOBENCH_ROOT=/inspire/ssd/project/traffic-congestion-management/public/bench-v1
 VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 python run.py \
-  --data TransVideoBench_1fps \
+  --data TransVideoBench_MCQ_64frame \
   --model llava_video_qwen2_7b_inspire_auto \
   --verbose
 

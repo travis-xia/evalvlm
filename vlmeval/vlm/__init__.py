@@ -34,6 +34,7 @@ _SUBMODULE_EXPORTS = (
     ('insight_v', ('InsightV',)),
     ('instructblip', ('InstructBLIP',)),
     ('interns1', ('InternS1Chat',)),
+    ('internvideo2_5', ('InternVideo2_5',)),
     ('internvl', ('InternVLChat',)),
     ('janus', ('Janus',)),
     ('keye_vlm', ('KeyeChat',)),
