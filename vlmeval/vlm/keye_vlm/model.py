@@ -30,11 +30,12 @@ def ensure_video_url(video: str) -> str:
 class KeyeChat(Qwen2VLPromptMixin, BaseModel):
     INSTALL_REQ = False
     INTERLEAVE = True
+    VIDEO_LLM = True
 
     def __init__(
         self,
         model_path='Kwai-Keye/Keye-VL-1_5-8B',
-        max_new_tokens=8192,  # Use a larger value for "think" models to avoid output truncation (e.g., MMMU)
+        max_new_tokens=8192,
         top_p=0.001,
         top_k=1,
         temperature=0,
@@ -49,6 +50,8 @@ class KeyeChat(Qwen2VLPromptMixin, BaseModel):
         min_pixels: int = None,
         max_pixels: int = None,
         post_process: bool = True,
+        fps: float = 0,
+        nframe: int = 0,
         **kwargs,
     ):
         super().__init__(use_custom_prompt=use_custom_prompt)
@@ -121,6 +124,9 @@ class KeyeChat(Qwen2VLPromptMixin, BaseModel):
 
         self.post_process = post_process
 
+        self.fps = fps
+        self.nframe = nframe
+
     def _prepare_content(
         self, inputs: list[dict[str, str]], dataset: str | None = None
     ) -> list[dict[str, str]]:
@@ -143,6 +149,12 @@ class KeyeChat(Qwen2VLPromptMixin, BaseModel):
                         item["min_pixels"] = self.min_pixels
                     if self.max_pixels is not None:
                         item["max_pixels"] = self.max_pixels
+            elif s["type"] == "video":
+                item = {"type": "video", "video": ensure_video_url(s["value"])}
+                if "fps" in s and float(s["fps"]) > 0:
+                    item["fps"] = float(s["fps"])
+                if "nframes" in s and int(s["nframes"]) > 0:
+                    item["max_frames"] = int(s["nframes"])
             elif s["type"] == "text":
                 item = {"type": "text", "text": s["value"]}
             else:

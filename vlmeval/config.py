@@ -2376,7 +2376,15 @@ keye_series = {
     "Keye-VL-1.5-8B-auto":partial(vlm.KeyeChat, model_path="Kwai-Keye/Keye-VL-1_5-8B"),
     "Keye-VL-1.5-8B-think":partial(vlm.KeyeChat, model_path="Kwai-Keye/Keye-VL-1_5-8B", think=True),
     "Keye-VL-1.5-8B-nothink":partial(vlm.KeyeChat, model_path="Kwai-Keye/Keye-VL-1_5-8B", no_think=True), 
-    "Keye-VL-8B-Preview-think":partial(vlm.KeyeChat, model_path="Kwai-Keye/Keye-VL-8B-Preview", think=True), 
+    "Keye-VL-8B-Preview-think":partial(vlm.KeyeChat, model_path="Kwai-Keye/Keye-VL-8B-Preview", think=True),
+    "Keye-VL-1_5-8B": partial(
+        vlm.KeyeChat,
+        model_path=(
+            "/inspire/qb-ilm/project/traffic-congestion-management/"
+            "xiacheng-240108120111/hf_download/Keye-VL-1_5-8B"
+        ),
+        no_think=True,
+    ),
 }
 
 qianfanvl_series = {
