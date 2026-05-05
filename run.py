@@ -138,6 +138,21 @@ def log_run_benchmark_report(run_dir):
     logger.info('\n' + tabulate(report_rows, headers='keys'))
 
 
+def _partial_with_video_llm(builder, use_native_video: bool):
+    """If ``use_native_video``, merge video_llm=True into partials whose class accepts it."""
+    if not use_native_video or not isinstance(builder, partial):
+        return builder
+    import inspect
+
+    if 'video_llm' not in inspect.signature(builder.func).parameters:
+        return builder
+    return partial(
+        builder.func,
+        *builder.args,
+        **{**(builder.keywords or {}), 'video_llm': True},
+    )
+
+
 # Make WORLD_SIZE invisible when build models
 def build_model_from_config(cfg, model_name, use_vllm=False):
     import vlmeval.api
@@ -542,6 +557,10 @@ def run_local_mode(args):
             if hasattr(v, 'keywords') and 'verbose' in v.keywords and args.verbose is not None:
                 v.keywords['verbose'] = args.verbose
                 supported_VLM[k] = v
+
+        if args.video_llm:
+            for k, v in list(supported_VLM.items()):
+                supported_VLM[k] = _partial_with_video_llm(v, True)
 
         # If FWD_API is set, will use class `GPT4V` for all API models in the config
         if os.environ.get('FWD_API', None) == '1':
@@ -992,7 +1011,7 @@ def run_api_mode(args):
     else:
         assert model_name in supported_VLM, \
             f'Model "{model_name}" not found in supported_VLM. Consider using --base-url to specify an API endpoint.'
-        model_builder = supported_VLM[model_name]
+        model_builder = _partial_with_video_llm(supported_VLM[model_name], args.video_llm)
 
     upsert_run_status(
         pred_root,

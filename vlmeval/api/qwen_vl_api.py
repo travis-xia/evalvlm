@@ -181,6 +181,10 @@ class QwenVLDashScopeVideoAPI(BaseAPI):
     MultiModalConversation (e.g. qwen3.5-plus extended thinking). When
     stream is True, chunks are aggregated; incremental_output=True joins
     token deltas, False uses the last chunk snapshot.
+
+    ``video_llm`` (default False) sets ``VIDEO_LLM`` for the dataloader: pass
+    ``run.py --video-llm`` so ``build_prompt(..., video_llm=True)`` sends one
+    native video; otherwise frames are expanded to many images.
     """
 
     is_api: bool = True
@@ -198,6 +202,7 @@ class QwenVLDashScopeVideoAPI(BaseAPI):
         seed: int = 3407,
         fps: float = 2.0,
         max_frames: int | None = None,
+        video_llm: bool = False,
         enable_thinking: bool = False,
         stream: bool = False,
         incremental_output: bool | None = None,
@@ -206,6 +211,7 @@ class QwenVLDashScopeVideoAPI(BaseAPI):
     ):
         import dashscope
 
+        self.VIDEO_LLM = video_llm
         self.model = model
         self.fps = fps
         self.max_frames = max_frames
