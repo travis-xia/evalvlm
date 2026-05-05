@@ -20,6 +20,57 @@ def ensure_image_url(image: str) -> str:
     raise ValueError(f'Invalid image: {image}')
 
 
+def _multimodal_response_text_segments(response) -> list[str]:
+    """Collect ordered 'text' fields from assistant message content."""
+    if response is None:
+        return []
+    try:
+        out = response.output
+        choices = out.choices
+        c0 = choices[0]
+        if isinstance(c0, dict):
+            msg = c0.get('message')
+        else:
+            msg = getattr(c0, 'message', None)
+        if msg is None:
+            return []
+        if isinstance(msg, dict):
+            content = msg.get('content')
+        else:
+            content = getattr(msg, 'content', None)
+        if not content:
+            return []
+    except (AttributeError, IndexError, KeyError, TypeError):
+        return []
+    texts = []
+    for block in content:
+        if isinstance(block, dict):
+            t = block.get('text')
+            if t:
+                texts.append(t)
+    return texts
+
+
+def extract_multimodal_answer_text(response) -> str:
+    """Return answer text: last non-empty segment (answer after reasoning when thinking is on)."""
+    segs = _multimodal_response_text_segments(response)
+    return segs[-1] if segs else ''
+
+
+def extract_multimodal_stream_text(chunks, incremental_output: bool) -> str:
+    """Aggregate streaming chunks: deltas concatenated if incremental, else last snapshot."""
+    per_chunk = []
+    for resp in chunks:
+        segs = _multimodal_response_text_segments(resp)
+        if segs:
+            per_chunk.append(''.join(segs))
+    if not per_chunk:
+        return ''
+    if incremental_output:
+        return ''.join(per_chunk)
+    return per_chunk[-1]
+
+
 class Qwen2VLAPI(Qwen2VLPromptMixin, BaseAPI):
     is_api: bool = True
 
@@ -125,6 +176,11 @@ class QwenVLDashScopeVideoAPI(BaseAPI):
 
     Uses dashscope.MultiModalConversation.call() to send video files
     directly (via file:// URI), controlled by fps and max_frames.
+
+    Pass enable_thinking / stream / incremental_output to match DashScope
+    MultiModalConversation (e.g. qwen3.5-plus extended thinking). When
+    stream is True, chunks are aggregated; incremental_output=True joins
+    token deltas, False uses the last chunk snapshot.
     """
 
     is_api: bool = True
@@ -142,6 +198,9 @@ class QwenVLDashScopeVideoAPI(BaseAPI):
         seed: int = 3407,
         fps: float = 2.0,
         max_frames: int | None = None,
+        enable_thinking: bool = False,
+        stream: bool = False,
+        incremental_output: bool | None = None,
         use_custom_prompt: bool = True,
         **kwargs,
     ):
@@ -150,6 +209,9 @@ class QwenVLDashScopeVideoAPI(BaseAPI):
         self.model = model
         self.fps = fps
         self.max_frames = max_frames
+        self.enable_thinking = enable_thinking
+        self.stream = stream
+        self.incremental_output = incremental_output
         self.generate_kwargs = dict(
             max_length=max_length,
             top_p=top_p,
@@ -203,15 +265,31 @@ class QwenVLDashScopeVideoAPI(BaseAPI):
         generation_kwargs = self.generate_kwargs.copy()
         kwargs.pop('dataset', None)
         generation_kwargs.update(kwargs)
+        generation_kwargs.setdefault('enable_thinking', self.enable_thinking)
+        generation_kwargs.setdefault('stream', self.stream)
+        if self.incremental_output is not None:
+            generation_kwargs.setdefault('incremental_output', self.incremental_output)
         try:
             response = dashscope.MultiModalConversation.call(
                 model=self.model,
                 messages=messages,
                 **generation_kwargs,
             )
-            if self.verbose:
-                print(response)
-            answer = response.output.choices[0]['message']['content'][0]['text']
+            use_stream = generation_kwargs.get('stream', False)
+            if use_stream:
+                chunk_list = []
+                for chunk in response:
+                    chunk_list.append(chunk)
+                    if self.verbose:
+                        print(chunk)
+                incr = generation_kwargs.get('incremental_output', True)
+                answer = extract_multimodal_stream_text(chunk_list, incr)
+            else:
+                if self.verbose:
+                    print(response)
+                answer = extract_multimodal_answer_text(response)
+            if not answer:
+                return -1, '', 'Empty model output. '
             return 0, answer, 'Succeeded! '
         except Exception as err:
             if self.verbose:
