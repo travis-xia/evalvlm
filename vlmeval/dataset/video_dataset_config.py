@@ -318,6 +318,7 @@ transvideobench_dataset = {
     'TransVideoBench_raw': partial(TransVideoBench, dataset='TransVideoBench'),
     'TransVideoBench_MCQ_raw': partial(TransVideoBench, dataset='TransVideoBench_MCQ'),
     'TransVideoBench_TG_raw': partial(TransVideoBench, dataset='TransVideoBench_TG'),
+    'TransVideoBench_MV_raw': partial(TransVideoBench, dataset='TransVideoBench_MV'),
 }
 
 mvu_eval_dataset = {

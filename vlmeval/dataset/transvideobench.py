@@ -29,9 +29,9 @@ TRANSVIDEOBENCH_ROOT = '/inspire/ssd/project/traffic-congestion-management/publi
 TRANSVIDEOBENCH_MCQ_FILE = 'results-en_en.merged.json'
 TRANSVIDEOBENCH_TG_FILE = 'results-tg-en_en.merged.json'
 TRANSVIDEOBENCH_MV_FILE = 'results-mv-en_en.json'
-TRANSVIDEOBENCH_MCQ_VIDEO_DIR = 'videos-mask'
-TRANSVIDEOBENCH_TG_VIDEO_DIR = 'videos-tg-mask'
-TRANSVIDEOBENCH_MV_VIDEO_DIR = 'videos-mv-mask'
+TRANSVIDEOBENCH_MCQ_VIDEO_DIR = 'video-mcq-mask'
+TRANSVIDEOBENCH_TG_VIDEO_DIR = 'video-tg-mask-new'
+TRANSVIDEOBENCH_MV_VIDEO_DIR = 'video-mv-mask'
 TRANSVIDEOBENCH_ENABLE_FRAME_TIMESTAMPS = False
 
 MCQ_PROMPT = """These are the frames of a traffic surveillance video.
@@ -468,15 +468,6 @@ class TransVideoBench(VideoBaseDataset):
 
     @staticmethod
     def _resolve_video(data_root, item, task_type, config):
-        if item.get('video_path'):
-            video = _strip_video_suffix(item['video_path'])
-            if osp.exists(_video_full_path(data_root, video)):
-                return video
-        if item.get('video'):
-            video = _strip_video_suffix(item['video'])
-            if osp.exists(_video_full_path(data_root, video)):
-                return video
-
         sample_id = item['id']
         preferred_dir = config['mcq_video_dir'] if task_type == 'mcq' else config['tg_video_dir']
         task_dirs = [preferred_dir]
@@ -491,6 +482,15 @@ class TransVideoBench(VideoBaseDataset):
         for rel_path in candidates:
             if osp.exists(osp.join(data_root, rel_path)):
                 return _strip_video_suffix(rel_path)
+
+        if item.get('video_path'):
+            video = _strip_video_suffix(item['video_path'])
+            if osp.exists(_video_full_path(data_root, video)):
+                return video
+        if item.get('video'):
+            video = _strip_video_suffix(item['video'])
+            if osp.exists(_video_full_path(data_root, video)):
+                return video
         return None
 
     @staticmethod

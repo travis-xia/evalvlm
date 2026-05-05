@@ -1,10 +1,18 @@
 export TRANSVIDEOBENCH_ROOT=/inspire/ssd/project/traffic-congestion-management/public/bench-v1
+# VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 python run.py \
+#   --data TransVideoBench_MCQ_64frame \
+#   --model llava_video_qwen2_7b_inspire_auto \
+#   --verbose
+
 VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 python run.py \
-  --data TransVideoBench_MCQ_64frame \
+  --data TransVideoBench_TG_64frame \
   --model llava_video_qwen2_7b_inspire_auto \
   --verbose
 
-
+# VLLM_ALLOW_LONG_MAX_MODEL_LEN=1 python run.py \
+#   --data TransVideoBench_MV_64frame \
+#   --model llava_video_qwen2_7b_inspire_auto \
+#   --verbose
 
 # 这个库同时支持api（例如有些模型这个库还不支持，我们也可以本地下载用vllm起服务后暴露为api模式）和本地起的model
 # api起model方式可以看一下说明文档，然后写到这个脚本里
