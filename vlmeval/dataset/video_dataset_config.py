@@ -307,11 +307,14 @@ omtg_dataset = {
 
 transvideobench_dataset = {
     'TransVideoBench_64frame': partial(TransVideoBench, dataset='TransVideoBench', nframe=64),
+    'TransVideoBench_50frame': partial(TransVideoBench, dataset='TransVideoBench', nframe=50),
     'TransVideoBench_1fps': partial(TransVideoBench, dataset='TransVideoBench', fps=1.0),
     'TransVideoBench_MCQ_64frame': partial(TransVideoBench, dataset='TransVideoBench_MCQ', nframe=64),
     'TransVideoBench_MCQ_1fps': partial(TransVideoBench, dataset='TransVideoBench_MCQ', fps=1.0),
     'TransVideoBench_TG_64frame': partial(TransVideoBench, dataset='TransVideoBench_TG', nframe=64),
     'TransVideoBench_TG_1fps': partial(TransVideoBench, dataset='TransVideoBench_TG', fps=1.0),
+    'TransVideoBench_MV_64frame': partial(TransVideoBench, dataset='TransVideoBench_MV', nframe=64),
+    'TransVideoBench_MV_1fps': partial(TransVideoBench, dataset='TransVideoBench_MV', fps=1.0),
     'TransVideoBench_raw': partial(TransVideoBench, dataset='TransVideoBench'),
     'TransVideoBench_MCQ_raw': partial(TransVideoBench, dataset='TransVideoBench_MCQ'),
     'TransVideoBench_TG_raw': partial(TransVideoBench, dataset='TransVideoBench_TG'),

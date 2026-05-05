@@ -104,13 +104,13 @@ class VideoBaseDataset(metaclass=ABCMeta):
             total_duration = total_frames / video_fps
 
             # 计算需要提取的总帧数
-            required_frames = int(total_duration * self.fps)
+            required_frames = max(1, int(total_duration * self.fps))
 
             # 计算提取帧的间隔
             step_size = video_fps / self.fps
 
             # 计算提取帧的索引
-            indices = [int(i * step_size) for i in range(required_frames)]
+            indices = [min(int(i * step_size), total_frames - 1) for i in range(required_frames)]
 
             # 提取帧并保存
             frame_paths = self.frame_paths_fps(video, len(indices))
