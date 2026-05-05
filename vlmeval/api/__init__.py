@@ -24,7 +24,7 @@ _SUBMODULE_EXPORTS = (
     ('mug_u', ('MUGUAPI',)),
     ('openai_sdk', ('OpenAISDKWrapper',)),
     ('qwen_api', ('QwenAPI',)),
-    ('qwen_vl_api', ('Qwen2VLAPI', 'QwenVLAPI', 'QwenVLWrapper')),
+    ('qwen_vl_api', ('Qwen2VLAPI', 'QwenVLAPI', 'QwenVLWrapper', 'QwenVLDashScopeVideoAPI')),
     ('rbdashmm_chat3_5_api', ('RBdashMMChat3_5_38B_API', 'RBdashMMChat3_78B_API')),
     ('rbdashmm_chat3_api', ('RBdashChat3_5_API', 'RBdashMMChat3_API')),
     ('reka', ('Reka',)),
@@ -64,5 +64,5 @@ __all__ = [
     'TaichuVLAPI', 'TaichuVLRAPI', 'DoubaoVL', 'MUGUAPI', 'KimiVLAPIWrapper', 'KimiVLAPI',
     'RBdashMMChat3_API', 'RBdashChat3_5_API', 'RBdashMMChat3_78B_API', 'RBdashMMChat3_5_38B_API',
     'VideoChatOnlineV2API', 'TeleMM2_API', 'TeleMM2Thinking_API', 'TogetherAPI', 'GCPVertexAPI',
-    'BedrockAPI', 'SenseChatVisionV2API', 'MiniMaxAPI',
+    'BedrockAPI', 'SenseChatVisionV2API', 'MiniMaxAPI', 'QwenVLDashScopeVideoAPI',
 ]

@@ -120,6 +120,106 @@ class Qwen2VLAPI(Qwen2VLPromptMixin, BaseAPI):
             return -1, '', ''
 
 
+class QwenVLDashScopeVideoAPI(BaseAPI):
+    """Qwen VL API via DashScope SDK with native video support.
+
+    Uses dashscope.MultiModalConversation.call() to send video files
+    directly (via file:// URI), controlled by fps and max_frames.
+    """
+
+    is_api: bool = True
+
+    def __init__(
+        self,
+        model: str = 'qwen-vl-max-latest',
+        key: str | None = None,
+        max_length: int = 8192,
+        temperature: float = 0.01,
+        top_p: float = 0.001,
+        top_k: int = 1,
+        repetition_penalty: float = 1.0,
+        presence_penalty: float = 0.0,
+        seed: int = 3407,
+        fps: float = 2.0,
+        max_frames: int | None = None,
+        use_custom_prompt: bool = True,
+        **kwargs,
+    ):
+        import dashscope
+
+        self.model = model
+        self.fps = fps
+        self.max_frames = max_frames
+        self.generate_kwargs = dict(
+            max_length=max_length,
+            top_p=top_p,
+            top_k=top_k,
+            temperature=temperature,
+            repetition_penalty=repetition_penalty,
+            presence_penalty=presence_penalty,
+            seed=seed,
+        )
+
+        key = os.environ.get('DASHSCOPE_API_KEY', None) if key is None else key
+        assert key is not None, (
+            'Please set the environment variable DASHSCOPE_API_KEY '
+            '(obtain it here: https://help.aliyun.com/zh/dashscope/developer-reference/vl-plus-quick-start)'
+        )
+        dashscope.api_key = key
+        dashscope.base_http_api_url = 'https://dashscope.aliyuncs.com/api/v1'
+        super().__init__(use_custom_prompt=use_custom_prompt, **kwargs)
+
+    def _prepare_content(self, inputs: list[dict[str, str]], dataset: str | None = None) -> list[dict]:
+        content = []
+        for s in inputs:
+            if s['type'] == 'image':
+                item = {'type': 'image', 'image': ensure_image_url(s['value'])}
+            elif s['type'] == 'video':
+                video_path = s['value']
+                if not video_path.startswith(('http://', 'https://', 'file://')):
+                    video_path = f'file://{os.path.abspath(video_path)}'
+                item = {'type': 'video', 'video': video_path, 'fps': self.fps}
+                if self.max_frames is not None:
+                    item['max_frames'] = self.max_frames
+            elif s['type'] == 'text':
+                item = {'type': 'text', 'text': s['value']}
+            else:
+                raise ValueError(f"Invalid message type: {s['type']}, {s}")
+            content.append(item)
+        return content
+
+    def generate_inner(self, inputs, **kwargs) -> str:
+        import dashscope
+
+        messages = []
+        if self.system_prompt is not None:
+            messages.append({'role': 'system', 'content': self.system_prompt})
+        messages.append(
+            {'role': 'user', 'content': self._prepare_content(inputs, dataset=kwargs.get('dataset', None))}
+        )
+        if self.verbose:
+            print(f'\033[31m{messages}\033[0m')
+
+        generation_kwargs = self.generate_kwargs.copy()
+        kwargs.pop('dataset', None)
+        generation_kwargs.update(kwargs)
+        try:
+            response = dashscope.MultiModalConversation.call(
+                model=self.model,
+                messages=messages,
+                **generation_kwargs,
+            )
+            if self.verbose:
+                print(response)
+            answer = response.output.choices[0]['message']['content'][0]['text']
+            return 0, answer, 'Succeeded! '
+        except Exception as err:
+            if self.verbose:
+                logger.error(f'{type(err)}: {err}')
+                logger.error(f'The input messages are {inputs}.')
+            return -1, '', ''
+
+
 class QwenVLWrapper(BaseAPI):
 
     is_api: bool = True

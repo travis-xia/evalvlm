@@ -1866,6 +1866,16 @@ hawkvl_series = {
 }
 
 qwen2vl_series = {
+    # DashScope SDK native video API models
+    "Qwen3.5-Plus-DashScope": partial(
+        api.QwenVLDashScopeVideoAPI,
+        model="qwen3.5-plus",
+        fps=2.0,
+        max_frames=64,
+        max_length=8192,
+        retry=10,
+        timeout=1800,
+    ),
     "Qwen-VL-Max-20250813": partial(
         api.Qwen2VLAPI,
         model="qwen-vl-max-2025-08-13",
