@@ -210,6 +210,11 @@ class QwenVLDashScopeVideoAPI(BaseAPI):
         self.fps = fps
         self.max_frames = max_frames
         self.enable_thinking = enable_thinking
+        _think = os.environ.get('DASHSCOPE_ENABLE_THINKING', '').strip()
+        if _think == '1':
+            self.enable_thinking = True
+        elif _think == '0':
+            self.enable_thinking = False
         self.stream = stream
         self.incremental_output = incremental_output
         self.generate_kwargs = dict(
