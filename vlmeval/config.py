@@ -1097,6 +1097,16 @@ internvideo2_5_series = {
     ),
 }
 
+videochat_flash_series = {
+    "VideoChat_Flash_Qwen2_7B_res448": partial(
+        vlm.VideoChatFlash,
+        model_path=(
+            "/inspire/qb-ilm/project/traffic-congestion-management/"
+            "xiacheng-240108120111/hf_download/VideoChat-Flash-Qwen2-7B_res448"
+        ),
+    ),
+}
+
 internvl = {
     "InternVL-Chat-V1-1": partial(
         vlm.InternVLChat, model_path="OpenGVLab/InternVL-Chat-V1-1", version="V1.1"
@@ -2623,6 +2633,7 @@ model_groups = [
 # add by EASI team
 model_groups.extend([bagel_series, spatial_related_models, sensenova_si_series])
 model_groups.append(internvideo2_5_series)
+model_groups.append(videochat_flash_series)
 
 for grp in model_groups:
     supported_VLM.update({k: v for k, v in grp.items() if v is not None})

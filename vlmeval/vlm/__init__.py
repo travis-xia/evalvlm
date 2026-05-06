@@ -25,6 +25,7 @@ _SUBMODULE_EXPORTS = (
     ('emu', ('Emu', 'Emu3_chat', 'Emu3_gen')),
     ('falcon_vlm', ('Falcon2VLM',)),
     ('flash_vl', ('FlashVL',)),
+    ('videochat_flash', ('VideoChatFlash',)),
     ('gemma', ('Gemma3', 'PaliGemma')),
     ('granite_docling', ('DOCLING',)),
     ('granite_vision', ('GraniteVision3',)),
