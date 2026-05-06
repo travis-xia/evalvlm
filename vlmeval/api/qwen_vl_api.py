@@ -1,6 +1,10 @@
 from __future__ import annotations
 import os
+import shutil
+import tempfile
+import uuid
 import warnings
+from pathlib import Path
 
 import numpy as np
 
@@ -11,13 +15,34 @@ from vlmeval.vlm.qwen2_vl.prompt import Qwen2VLPromptMixin
 logger = get_logger(__name__)
 
 
+def _ensure_unique_local_media_url(path: str, prefixes: list[str], media_type: str) -> str:
+    if any(path.startswith(prefix) for prefix in prefixes):
+        return path
+    if not os.path.exists(path):
+        raise ValueError(f'Invalid {media_type}: {path}')
+
+    src = Path(path).resolve()
+    tmp_dir = Path(tempfile.gettempdir()) / 'vlmeval_dashscope_uploads' / media_type
+    tmp_dir.mkdir(parents=True, exist_ok=True)
+    dst = tmp_dir / f'{src.stem}-{uuid.uuid4().hex}{src.suffix}'
+    shutil.copy2(src, dst)
+    return f'file://{dst}'
+
+
 def ensure_image_url(image: str) -> str:
-    prefixes = ['http://', 'https://', 'file://', 'data:image;']
-    if any(image.startswith(prefix) for prefix in prefixes):
-        return image
-    if os.path.exists(image):
-        return 'file://' + image
-    raise ValueError(f'Invalid image: {image}')
+    return _ensure_unique_local_media_url(
+        image,
+        prefixes=['http://', 'https://', 'file://', 'data:image;'],
+        media_type='image',
+    )
+
+
+def ensure_video_url(video: str) -> str:
+    return _ensure_unique_local_media_url(
+        video,
+        prefixes=['http://', 'https://', 'file://', 'data:video;'],
+        media_type='video',
+    )
 
 
 def _multimodal_response_text_segments(response) -> list[str]:
@@ -248,9 +273,7 @@ class QwenVLDashScopeVideoAPI(BaseAPI):
             if s['type'] == 'image':
                 item = {'type': 'image', 'image': ensure_image_url(s['value'])}
             elif s['type'] == 'video':
-                video_path = s['value']
-                if not video_path.startswith(('http://', 'https://', 'file://')):
-                    video_path = f'file://{os.path.abspath(video_path)}'
+                video_path = ensure_video_url(s['value'])
                 item = {'type': 'video', 'video': video_path, 'fps': self.fps}
                 if self.max_frames is not None:
                     item['max_frames'] = self.max_frames
